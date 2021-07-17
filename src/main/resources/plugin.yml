@@ -1,0 +1,4 @@
+name: DiscordLogger
+version: ${project.version}
+main: discordlogger.DiscordLogger
+api-version: 1.17
