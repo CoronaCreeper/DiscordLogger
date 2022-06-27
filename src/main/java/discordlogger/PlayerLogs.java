@@ -1,64 +1,45 @@
 package discordlogger;
 
-import club.minnced.discord.webhook.WebhookClient;
-import org.bukkit.configuration.file.YamlConfiguration;
+import club.minnced.discord.webhook.send.WebhookEmbed;
+import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 
-import java.io.File;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+
+import static discordlogger.ConfigParser.isDisabled;
+import static discordlogger.DiscordLogger.webhookClient;
 
 public class PlayerLogs implements Listener {
 
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent event) {
-
-        File f = new File("plugins/DiscordLogger/config.yml");
-        YamlConfiguration yamlFile = YamlConfiguration.loadConfiguration(f);
+        if(isDisabled("events.player.commandUsed")) return;
         Player p = event.getPlayer();
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
-        LocalDateTime now = LocalDateTime.now();
-        WebhookClient webhookClient = WebhookClient.withUrl(yamlFile.getString("webhook-url"));
-        webhookClient.send("`" + event.getPlayer().getName() + "` has used command " + event.getMessage() +
-                "\n" +
-                "```"+
-                "\nUUID: " + p.getUniqueId() +
-                "\nIP: " + p.getAddress() +
-                "\nIs OP: " + p.isOp() + "```");
+        WebhookEmbedBuilder embedMessage = new WebhookEmbedBuilder()
+                .setAuthor(new WebhookEmbed.EmbedAuthor("Command Used", null, null))
+                .setColor(0xffff00)
+                .addField(new WebhookEmbed.EmbedField(true, "Player", "`"+p.getName()+"`"))
+                .addField(new WebhookEmbed.EmbedField(true, "UUID", "`"+p.getUniqueId()+"`"))
+                .addField(new WebhookEmbed.EmbedField(true, "Command", "`"+event.getMessage()+"`"))
+                .setTimestamp(Instant.now());
+        webhookClient.send(embedMessage.build());
     }
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
+        if(isDisabled("events.player.kick")) return;
         Player p = event.getPlayer();
-        String reason = event.getReason();
-        File f = new File("plugins/DiscordLogger/config.yml");
-        YamlConfiguration yamlFile = YamlConfiguration.loadConfiguration(f);
-        WebhookClient webhookClient = WebhookClient.withUrl(yamlFile.getString("webhook-url"));
-        webhookClient.send("`" + p.getName() + "` has been kicked" +
-                "\nReason: **" + reason + "**" +
-                "\n" +
-                "```"+
-                "\nUUID: " + p.getUniqueId() +
-                "\nIP: " + p.getAddress() +
-                "\nIs OP: " + p.isOp() + "```");
-    }
-
-    @EventHandler
-    public void onTP(PlayerTeleportEvent event) {
-        Player p = event.getPlayer();
-        String cause = String.valueOf(event.getCause());
-        File f = new File("plugins/DiscordLogger/config.yml");
-        YamlConfiguration yamlFile = YamlConfiguration.loadConfiguration(f);
-        WebhookClient webhookClient = WebhookClient.withUrl(yamlFile.getString("webhook-url"));
-        webhookClient.send("`" + p.getName() + "` has teleported" +
-                "\nReason: **" + cause + "**" +
-                "\n" +
-                "```"+
-                "\nUUID: " + p.getUniqueId() +
-                "\nIP: " + p.getAddress() +
-                "\nIs OP: " + p.isOp() + "```");
+        WebhookEmbedBuilder embedMessage = new WebhookEmbedBuilder()
+                .setAuthor(new WebhookEmbed.EmbedAuthor("Player kick", null, null))
+                .setColor(0xffff00)
+                .addField(new WebhookEmbed.EmbedField(true, "Player", "`"+p.getName()+"`"))
+                .addField(new WebhookEmbed.EmbedField(true, "UUID", "`"+p.getUniqueId()+"`"))
+                .addField(new WebhookEmbed.EmbedField(true, "Reason", "`"+event.getReason()+"`"))
+                .setTimestamp(Instant.now());
+        webhookClient.send(embedMessage.build());
     }
 }
